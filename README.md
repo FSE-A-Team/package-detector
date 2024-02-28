@@ -1,11 +1,11 @@
 # Package Detection System
 
 ## Overview: 
-We are building a system for detecting packages for the sight-impaired. 
+We are building a system that detects packages for the sight-impaired. 
 
 ## Features:
 
 
-## Components
+## Components:
 
 
