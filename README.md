@@ -17,3 +17,10 @@ See System Diagram Here: https://miro.com/app/board/uXjVNnaeYi0=/
 - Using Raspberry Pi v. 4
 - TensorFlow for Image Classification
 
+
+## TODOs:
+- Build TensorFlow base image recognition model
+- Train Model with Box Images
+- Write Weight Interpreter Code
+- Create Classes that incorporate all the codes
+- Write SMS Script
