@@ -1,6 +1,9 @@
 # Package Detection System
 Group: Mark Holgate, Lily Jones, Mudit Garg, James Lee
 
+## Important Codes
+Team locker code - 25_03_09
+
 ## Overview: 
 We are building a system that detects packages for the sight-impaired. 
 See System Diagram Here: https://miro.com/app/board/uXjVNnaeYi0=/
