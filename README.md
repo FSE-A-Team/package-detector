@@ -27,7 +27,7 @@ See System Diagram Here: https://miro.com/app/board/uXjVNnaeYi0=/
 - Write Weight Interpreter Code
 - Create Classes that incorporate all the codes
 - Write SMS Script
-- We need to download a 'picamera' library for camera.
+- To recognize a package using the Raspberry Pi Camera Module v1.3, you'll need to use computer vision techniques to process the images captured by the camera. One popular library for computer vision in Python is OpenCV. 
 ## Work Done: 
 - Stepper motor has been programmed.
 - SMS sender has been programmed.
