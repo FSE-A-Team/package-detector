@@ -27,6 +27,7 @@ See System Diagram Here: https://miro.com/app/board/uXjVNnaeYi0=/
 - Write Weight Interpreter Code
 - Create Classes that incorporate all the codes
 - Write SMS Script
+- We need to download a 'picamera' library for camera.
 ## Work Done: 
 - Stepper motor has been programmed.
  
