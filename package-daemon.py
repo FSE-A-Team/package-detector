@@ -16,19 +16,26 @@ args = parser.parse_args()
 class package_daemon:
     def __init__(self, args):
         self.args = args
+        # TODO: get pins from modules pins_dict = {"in": [3,5,7], "out": [12, 16, 18, 22]}
+        # TODO: initialize GPIO with pins_dict
 
     def cleanup(self):
+        # TODO: cleanup GPIO
+
         pass
 
     def run(self):
         try:
             while True:
-                pass #do something here
+                # TODO: get data from camera
+                # TODO: Do something with the data
+                # TODO: text someone!
+                pass
                 time.sleep(1)
                 
         except KeyboardInterrupt:
             self.cleanup()
-            print("Exiting Package Daemon")
+            print("Kaaaaaahhhnnnnn!!!")
 
 # Run the daemon
 if __name__ == "__main__":
