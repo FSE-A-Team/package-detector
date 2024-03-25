@@ -1,5 +1,5 @@
 #import RPi.GPIO as GPIO
-import gpio
+from modules import gpio
 import time
 
 
