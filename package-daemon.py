@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import modules
+from modules import camera, crypto, gpio, pressure, sms, SQL, steppers
 import argparse
 import time
 
@@ -7,8 +7,8 @@ import time
 parser = argparse.ArgumentParser(description='Package Daemon')
 
 parser.add_argument('--example', 
-							metavar = '50', default = 50.0, type = float,
-							help='Time in milliseconds to wait for combo buttons')
+                    metavar = '50', default = 50.0, type = float,
+                    help='Time in milliseconds to wait for combo buttons')
 
 args = parser.parse_args()
 
@@ -18,6 +18,12 @@ class package_daemon:
         self.args = args
         # TODO: get pins from modules pins_dict = {"in": [3,5,7], "out": [12, 16, 18, 22]}
         # TODO: initialize GPIO with pins_dict
+        SQL.init()
+        self.credentials = SQL.loadCredentials()
+        self.credentials[0]["pk"] = 'raspberry'
+        sms.set_credentials(self.credentials[0])
+        print("Credentials loaded: ", self.credentials[0])
+        sms.send_sms_via_email('6025618306@tmomail.net', 'Hello, World! This is a test message!')
 
     def cleanup(self):
         # TODO: cleanup GPIO
