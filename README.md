@@ -31,5 +31,6 @@ See System Diagram Here: https://miro.com/app/board/uXjVNnaeYi0=/
 ## Work Done: 
 - Stepper motor has been programmed.
 - SMS sender has been programmed.
+- Pressure sensor increments package when added, decrements when a package is removed.
  
 
