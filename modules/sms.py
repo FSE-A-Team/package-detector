@@ -21,7 +21,16 @@ def send_sms_via_email(sms_gateway, message):
     email_msg['From'] = account
     email_msg['To'] = sms_gateway
     #email_msg['Subject'] = 'SMS via Email'  # You can change or remove the subject
-    email_msg.attach(MIMEText(message, 'plain'))
+    email_msg['MIME-Version'] = '1.0'
+    email_msg.add_header('Content-Type', 'text/plain; charset="UTF-8"')
+    
+    email_msg.attach(MIMEText(message, 'plain', 'utf-8'))
+    headers = ["From: " + account,
+                "To: " + sms_gateway,
+                "MIME-Version: 1.0",
+                "Content-Type: text/html"]
+    headers = "\r\n".join(headers)
+    text = headers + "\r\n\r\n" + message
 
     # Server setup
     server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -29,7 +38,7 @@ def send_sms_via_email(sms_gateway, message):
     server.login(account, password)
 
     # Send the email
-    text = email_msg.as_string()
+    #text = email_msg.as_string()
     server.sendmail(account, sms_gateway, text)
     server.quit()
 
