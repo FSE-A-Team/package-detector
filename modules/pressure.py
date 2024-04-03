@@ -55,5 +55,5 @@ while True:
         print(f"Package Count: {package_count}")
 
    
-    #Have a slight pause here, also to avoid spamming the shell with data
+    #Have a slight pause here, and avoid spamming the shell with data
     time.sleep(0.2)
