@@ -16,14 +16,25 @@ step_sequence = [
     [0, 0, 1, 1]
 ]
 
+rev_sequence = [
+    [0, 0, 1, 1],
+    [0, 1, 1, 0],
+    [1, 1, 0, 0],
+    [1, 0, 0, 1]
+]
+
 # Function for stepping the motor
-def step_motor(steps=500, direction=1):
+def step_motor(steps=50, direction=1):
     # Loop through the steps
     # Forward if direction = 1, Reverse if direction = -1
     for i in range(steps):
         for fullstep in range(4):
             for pin in range(4):
-                gpio.write_pin(PINS[pin], step_sequence[(fullstep + direction) % 4][pin])
+                if (direction == 1):
+                    gpio.write_pin(PINS[pin], step_sequence[(fullstep + direction) % 4][pin])
+                else:
+                    gpio.write_pin(PINS[pin], rev_sequence[(fullstep + direction) % 4][pin])
+                #GPIO.output(control_pins[pin], step_sequence[(halfstep + direction) % 4][pin])
             time.sleep(0.002)
 
 # TODO: Implement the following functions

@@ -1,59 +1,103 @@
 #Start by importing all necessary libraries and packages 
-import RPi.GPIO as GPIO
 import time
+from datetime import datetime
 import smbus
+import asyncio
 
-address = 0x48
-A0 = 0x40
 
-bus = smbus.SMBus(1)
+#create a sensor object
+class Sensor:
+    def __init__(self , input_address=[0x40], I2c_address=0x48):
+        '''
+        input_address: List of addresses for ADC inputs
+        i2c_address: The address of the adc on the i2c bus
+        '''
+        self.I2c_address = I2c_address
+        self.input_address = input_address
+        self.bus = smbus.SMBus(1)
+        self.package_count = 0
+        self.base_value = self.__get_current_total()
+        self.recorded_weights = [self.base_value]
+        self.current_state = 0 # 0: no change, 1: increase, -1: decrease
 
-#Set the GPIO to BCM Mode
-# GPIO.setmode(GPIO.BCM)
+        self.interval = 1
+        self.last_time_weight_changed = time.time()
 
-#Set Pin 4 to be our Sniffer Pin, We want this to be an Input so we set it as such
-# GPIO.setup(4,GPIO.IN)
+    def __read_one_sensor(self, input_address=0x40):
+        '''
+        return just one sensor reading
+        '''
+        #return datetime.now().second #for testing
+        self.bus.write_byte(self.I2c_address, input_address)
+        return self.bus.read_byte(self.I2c_address)
+    
+    def __read_all_sensors(self):
+        '''
+        iterate through input addresses and return average
+        '''
+        sum = 0
+        for current_input_address in self.input_address:
+            sum += self.__read_one_sensor(current_input_address)
+        return sum / len(self.input_address)
+    
+    def __get_current_total(self, normalize_delay=3):
+        '''
+        return the average reading over a period of time (normalize_delay)
+        --------------------------------
+        normalize_delay: number of seconds used to get average reading
+        ''' 
+        readings = []
+        sleep_time = 0.25
+        normalize_delay = int(normalize_delay / sleep_time)
+        for i in range(normalize_delay):
+            readings.append(self.__read_all_sensors())
+            time.sleep(sleep_time)
+        return sum(readings) / len(readings)
 
-#This variable will be used to determine if pressure is being applied or not
-prev_input = 0
+    def __compare_to_last_recorded(self, current_value):
+        '''
+        compare current value to last recorded value
+        '''
+        if current_value > sum(self.recorded_weights):
+            return 1
+        elif current_value < sum(self.recorded_weights):
+            return -1
+        return 0 #no change
 
-package_count = 0
-original_value = 15
+    async def get_package_count(self):
+        '''
+        used for external access to package count
+        '''
+        return self.package_count, self.recorded_weights
+    
+    def __record_weight(self, current_value):
+        new_package_weight = current_value - sum(self.recorded_weights)
+        if new_package_weight > 0: #avoid package removal errors
+            self.recorded_weights.append(new_package_weight)
+            self.package_count += 1
 
-# Time interval to check the weight (1 second)
-interval = 1
-# Store the last time the package was counted
-last_time_weight_changed = time.time()
+    def __remove_weight(self):
+        '''
+        -Quick and Easy handling-
+        If a package is removed, assume all packages are removed
+        If weight > base_value, assume it is a single remaining package
+        '''
+        self.recorded_weights = [self.base_value]
+        self.package_count = 0
+        current_value = self.__get_current_total()
+        if current_value > self.base_value:
+            self.recorded_weights.append(current_value - self.base_value)
+            self.package_count += 1
 
-# TODO - Implement buffer WHILE the weight changes
-# buffer = 1
+    
+    async def run(self):
 
-#Create a Loop that goes on as long as the script is running
-while True:
+        while True:
+            current_total = self.__get_current_total()
+            self.current_state = self.__compare_to_last_recorded(current_total)
+            if self.current_state == 1:
+                self.__record_weight(current_total)
+            elif self.current_state == -1:
+                self.__remove_weight()
 
-    bus.write_byte(address, A0)
-
-    current_value = bus.read_byte(address)
-
-    # calibrate potentiometer to 12
-  
-    # Check if at least interval seconds have passed since last weight change
-    if (time.time() - last_time_weight_changed) >= interval:
-        if original_value < current_value:
-            # New package added, increase count
-            package_count += 1
-            last_time_weight_changed = time.time()  # Reset the timer for weight change
-        elif original_value > current_value and package_count > 0:
-            # Package removed, decrease count
-            
-            package_count -= 1
-            last_time_weight_changed = time.time()  # Reset the timer for weight change
-
-        original_value = current_value  # Update the original value to the new value
-
-        print(f"Current Value: {current_value}")
-        print(f"Package Count: {package_count}")
-
-   
-    #Have a slight pause here, and avoid spamming the shell with data
-    time.sleep(0.2)
+            await asyncio.sleep(self.interval)
