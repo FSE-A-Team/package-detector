@@ -62,7 +62,7 @@ def getImageBlob( imagePath ):
     except:
         return None
     
-def getDatabasePath ( defaultPath = './config/' ):
+def getDatabasePath ( defaultPath = '../config/' ):
     if __name__ == "__main__":
         defaultPath = '../'
     global SQL, sqlCursor
@@ -70,20 +70,25 @@ def getDatabasePath ( defaultPath = './config/' ):
     if not os.path.isdir( path ):
         defaultPath = os.path.realpath( os.path.dirname(sys.argv[0]) )
         path = os.path.join( defaultPath,'config' )
-    return os.path.join( path, 'config.db3' )
+    return path
 
 #load credentials database and return credentials as dictionary
 def loadCredentials():
-    sqlCredentials = sqlite3.connect( "./credentials.db3", check_same_thread=False )
-    sqlCredentials.row_factory = dict_factory
-    credentialsCursor = sqlCredentials.cursor()
-    credentials = credentialsCursor.execute( 'SELECT * FROM credentials' ).fetchall()
+    try:
+        CREDENTIALS_PATH = os.path.join( getDatabasePath(), "credentials.db3")
+        sqlCredentials = sqlite3.connect( CREDENTIALS_PATH, check_same_thread=False )
+        sqlCredentials.row_factory = dict_factory
+        credentialsCursor = sqlCredentials.cursor()
+        credentials = credentialsCursor.execute( 'SELECT * FROM credentials' ).fetchall()
+        sqlCredentials.close()
+    except:
+        credentials = None
     return credentials
 
 
 def init():
     global SQL, sqlCursor
-    DATABASE_PATH = getDatabasePath()
+    DATABASE_PATH = os.path.join( getDatabasePath(), 'packages.db3' )
     SQL = sqlite3.connect( DATABASE_PATH, check_same_thread=False )
     SQL.row_factory = dict_factory
     sqlCursor = SQL.cursor()
