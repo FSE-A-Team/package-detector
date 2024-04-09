@@ -7,7 +7,7 @@ import asyncio
 
 #create a sensor object
 class Sensor:
-    def __init__(self , input_address=[0x40], I2c_address=0x48):
+    def __init__(self , input_address=[0x40, 0x41], I2c_address=0x48):
         '''
         input_address: List of addresses for ADC inputs
         i2c_address: The address of the adc on the i2c bus
@@ -40,7 +40,7 @@ class Sensor:
             sum += self.__read_one_sensor(current_input_address)
         return sum / len(self.input_address)
     
-    def __get_current_total(self, normalize_delay=3):
+    def __get_current_total(self, normalize_delay=6):
         '''
         return the average reading over a period of time (normalize_delay)
         --------------------------------
@@ -52,15 +52,15 @@ class Sensor:
         for i in range(normalize_delay):
             readings.append(self.__read_all_sensors())
             time.sleep(sleep_time)
-        return sum(readings) / len(readings)
+        return int(sum(readings) / len(readings))
 
     def __compare_to_last_recorded(self, current_value):
         '''
         compare current value to last recorded value
         '''
-        if current_value > sum(self.recorded_weights):
+        if current_value > sum(self.recorded_weights)+5:
             return 1
-        elif current_value < sum(self.recorded_weights):
+        elif current_value < sum(self.recorded_weights)-5:
             return -1
         return 0 #no change
 

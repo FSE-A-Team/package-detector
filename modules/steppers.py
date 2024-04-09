@@ -23,6 +23,10 @@ rev_sequence = [
     [1, 0, 0, 1]
 ]
 
+def initialize():
+    gpio.setup({"in":[],"out":PINS})
+
+    
 # Function for stepping the motor
 def step_motor(steps=50, direction=1):
     # Loop through the steps
@@ -40,11 +44,11 @@ def step_motor(steps=50, direction=1):
 # TODO: Implement the following functions
 # Function to open lid
 def open_lid():
-    pass
+    step_motor(150, 1)
 
 #function to close lid
 def close_lid():
-    pass
+    step_motor(150, -1)
 
 #function get status of motor
 def get_status():
@@ -53,4 +57,8 @@ def get_status():
 
 if __name__=="__main__":
     gpio.setup({"in":[],"out":PINS})
-    step_motor()
+
+    try:
+      open_lid()
+    except:
+      gpio.cleanup()

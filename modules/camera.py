@@ -17,6 +17,7 @@ from picamera2 import Picamera2
 
 # Global variables to calculate FPS
 ITEM_SEARCH="bottle"
+TEST_CATEGORY_NAME="bottle"
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
 picam2 = Picamera2()
@@ -97,9 +98,12 @@ def run(model: str, max_results: int, score_threshold: float,
         for detection in detection_result_list[0].detections:
             category = detection.categories[0]
             category_name = category.category_name
-            if category_name == ITEM_SEARCH: 
+            category_score = category.score
+            #print("Category Name: " + category_name)
+            if category_name == ITEM_SEARCH and category_score > 0.5: #or category_name == TEST_CATEGORY_NAME:
                cleanup(detector)
-               return True
+               print("A " + category_name + " dropped in your box!")
+               return category_name
         current_frame = visualize(current_frame, detection_result_list[0])
         detection_frame = current_frame
         detection_result_list.clear()

@@ -51,5 +51,7 @@ def visualize(
                      MARGIN + ROW_SIZE + bbox.origin_y)
     cv2.putText(image, result_text, text_location, cv2.FONT_HERSHEY_DUPLEX,
                 FONT_SIZE, TEXT_COLOR, FONT_THICKNESS, cv2.LINE_AA)
-
+    
+  # print("Item Detected: " + category_name + "\nCategory Score: " + str(probability))
+  
   return image
