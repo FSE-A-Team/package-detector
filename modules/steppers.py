@@ -10,17 +10,17 @@ PINS = [31, 33, 35, 37]
 
 # Define the sequence of control signals for 4-step sequence
 step_sequence = [
-    [1, 0, 0, 1],
-    [1, 1, 0, 0],
+    [1, 0, 1, 0],
     [0, 1, 1, 0],
-    [0, 0, 1, 1]
+    [0, 1, 0, 1],
+    [1, 0, 0, 1]
 ]
 
 rev_sequence = [
-    [0, 0, 1, 1],
+    [1, 0, 0, 1],
+    [0, 1, 0, 1],
     [0, 1, 1, 0],
-    [1, 1, 0, 0],
-    [1, 0, 0, 1]
+    [1, 0, 1, 0]
 ]
 
 def initialize():
