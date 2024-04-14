@@ -23,14 +23,32 @@ rev_sequence = [
     [1, 0, 1, 0]
 ]
 
+old_step_sequence = [
+    [1, 0, 0, 1],
+    [1, 1, 0, 0],
+    [0, 1, 1, 0],
+    [0, 0, 1, 1]
+]
+
+old_rev_sequence2 = [
+    [0, 0, 1, 1],
+    [0, 1, 1, 0],
+    [1, 1, 0, 0],
+    [1, 0, 0, 1]
+]
+
+sleep_time = .0015
+
 def initialize():
     gpio.setup({"in":[],"out":PINS})
 
     
 # Function for stepping the motor
 def step_motor(steps=50, direction=1):
+    global sleep_time
     # Loop through the steps
     # Forward if direction = 1, Reverse if direction = -1
+    #sleep_time += 0.001
     for i in range(steps):
         for fullstep in range(4):
             for pin in range(4):
@@ -39,7 +57,7 @@ def step_motor(steps=50, direction=1):
                 else:
                     gpio.write_pin(PINS[pin], rev_sequence[(fullstep + direction) % 4][pin])
                 #GPIO.output(control_pins[pin], step_sequence[(halfstep + direction) % 4][pin])
-            time.sleep(0.002)
+            time.sleep(sleep_time)
 
 # TODO: Implement the following functions
 # Function to open lid
@@ -57,8 +75,12 @@ def get_status():
 
 if __name__=="__main__":
     gpio.setup({"in":[],"out":PINS})
-
-    try:
-      open_lid()
-    except:
-      gpio.cleanup()
+    
+    while True:
+      try:
+        open_lid()
+        time.sleep(.5)
+        close_lid()
+        time.sleep(2)
+      except:
+        gpio.cleanup()
