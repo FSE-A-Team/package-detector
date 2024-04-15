@@ -16,8 +16,7 @@ except ModuleNotFoundError:
 from picamera2 import Picamera2
 
 # Global variables to calculate FPS
-ITEM_SEARCH="bottle"
-TEST_CATEGORY_NAME="bottle"
+ITEM_SEARCH=["kite","frisbee","tie","umbrella"]
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
 picam2 = Picamera2()
@@ -100,11 +99,11 @@ def run(model: str, max_results: int, score_threshold: float,
             category_name = category.category_name
             category_score = category.score
             #print("Category Name: " + category_name)
-            if category_name == ITEM_SEARCH and category_score > 0.5: #or category_name == TEST_CATEGORY_NAME:
+            if category_name in ITEM_SEARCH and category_score > 0.4:
                cleanup(detector)
-               print("A " + category_name + " dropped in your box!")
+               print("A package dropped in your box!")
                return category_name
-        current_frame = visualize(current_frame, detection_result_list[0])
+        current_frame = visualize(current_frame, detection_result_list[0], ITEM_SEARCH)
         detection_frame = current_frame
         detection_result_list.clear()
 

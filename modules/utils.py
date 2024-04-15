@@ -25,7 +25,8 @@ TEXT_COLOR = (0, 0, 0)  # black
 
 def visualize(
     image,
-    detection_result
+    detection_result,
+    ITEM_SEARCH
 ) -> np.ndarray:
   """Draws bounding boxes on the input image and return it.
   Args:
@@ -45,6 +46,8 @@ def visualize(
     # Draw label and score
     category = detection.categories[0]
     category_name = category.category_name
+    if category_name in ITEM_SEARCH:
+      category_name = "package"
     probability = round(category.score, 2)
     result_text = category_name + ' (' + str(probability) + ')'
     text_location = (MARGIN + bbox.origin_x,
