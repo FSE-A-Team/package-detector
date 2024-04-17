@@ -63,11 +63,11 @@ class package_daemon:
                     while package_count < initial_package_count:
                         package_count, package_list = await self.pSensor.get_package_count()
                         await asyncio.sleep(1)  # Use asyncio.sleep instead of time.sleep
-                    print("found the package! " + item_found)
+                    print("found the package! ")
                     #animation.play()
                    
                     print("SENDING SMS...")
-                    sms.send_sms_via_email('eelksemaj@gmail.com', 'A ' + item_found + ' is in your box!!!')
+                    sms.send_sms_via_email('eelksemaj@gmail.com', 'A package is in your box!!!')
                     
                     #sms.send_sms_via_email('6025618306@tmomail.net', 'You have a package!')
                     #sms.send_sms_via_email('holgate.mark1@gmail.com', 'You have a package!')

@@ -17,7 +17,7 @@ class Sensor:
         self.input_address = input_address
         self.bus = smbus.SMBus(1)
         self.package_count = 0
-        self.base_value = self.__get_current_total()
+        self.base_value = self.__get_current_total() * 1.05
         self.recorded_weights = [self.base_value]
         self.current_state = 0 # 0: no change, 1: increase, -1: decrease
 
@@ -30,16 +30,20 @@ class Sensor:
         '''
         #return datetime.now().second #for testing
         self.bus.write_byte(self.I2c_address, input_address)
-        return self.bus.read_byte(self.I2c_address)
+        temp = self.bus.read_byte(self.I2c_address)
+        #print(input_address,"-",temp)
+        return temp
     
     def __read_all_sensors(self):
         '''
         iterate through input addresses and return average
         '''
         sum = 0
+        #os.system('cls' if os.name == 'nt' else 'clear')
         for current_input_address in self.input_address:
-            sum += self.__read_one_sensor(current_input_address)
-        return sum / len(self.input_address)
+            if current_input_address == self.input_address[1]:
+              sum += self.__read_one_sensor(current_input_address)
+        return sum #/ len(self.input_address)
     
     def __get_current_total(self, normalize_delay=6):
         '''
@@ -48,7 +52,7 @@ class Sensor:
         normalize_delay: number of seconds used to get average reading
         ''' 
         readings = []
-        sleep_time = 0.25
+        sleep_time = 0.5
         normalize_delay = int(normalize_delay / sleep_time)
         for i in range(normalize_delay):
             readings.append(self.__read_all_sensors())
@@ -104,18 +108,25 @@ class Sensor:
             await asyncio.sleep(self.interval)
 
 
-#create test if run as main
-if __name__ == '__main__':
-    #sensor = Sensor()
-    #asyncio.run(sensor.run()) #run the sensor
+async def system_test():
+    sensor = Sensor()
+    pressure_task = asyncio.create_task(sensor.run()) #run the sensor
     dot_count = 0
-    dots = ['.', '..', '...', '....']
+    dots = ['', '.', '..', '...']
     while True:
         #clear screen
-        os.system('cls' if os.name == 'nt' else 'clear')
-        dot_count += 1
-        print("Reading Weight", end=f"{dots[dot_count]}\n")
-        #print(f"Packages: {sensor.package_count} \nRecorded Weights: {sensor.recorded_weights}")
-        if dot_count == 4:
-            dot_count = 0
-        time.sleep(.5)
+        try:
+          os.system('cls' if os.name == 'nt' else 'clear')
+          dot_count += 1
+          print("Reading Weight", end=f"{dots[dot_count]}\n")
+          package_count, recorded_weights = await sensor.get_package_count()
+          print(f"Packages: {package_count} \nRecorded Weights: {recorded_weights}")
+          if dot_count == 3:
+              dot_count = 0
+          await asyncio.sleep(.5)
+        except KeyboardInterrupt:
+          pressure_task.cancel()
+
+#create test if run as main
+if __name__ == '__main__':
+    asyncio.run(system_test())

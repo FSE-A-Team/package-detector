@@ -62,11 +62,11 @@ def step_motor(steps=50, direction=1):
 # TODO: Implement the following functions
 # Function to open lid
 def open_lid():
-    step_motor(150, 1)
+    step_motor(150, -1)
 
 #function to close lid
 def close_lid():
-    step_motor(150, -1)
+    step_motor(130, 1)
 
 #function get status of motor
 def get_status():
