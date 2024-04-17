@@ -3,11 +3,12 @@ import time
 from datetime import datetime
 import smbus
 import asyncio
+import os
 
 
 #create a sensor object
 class Sensor:
-    def __init__(self , input_address=[0x40, 0x41], I2c_address=0x48):
+    def __init__(self , input_address=[0x40, 0x41, 0x42, 0x43], I2c_address=0x48):
         '''
         input_address: List of addresses for ADC inputs
         i2c_address: The address of the adc on the i2c bus
@@ -101,3 +102,20 @@ class Sensor:
                 self.__remove_weight()
 
             await asyncio.sleep(self.interval)
+
+
+#create test if run as main
+if __name__ == '__main__':
+    #sensor = Sensor()
+    #asyncio.run(sensor.run()) #run the sensor
+    dot_count = 0
+    dots = ['.', '..', '...', '....']
+    while True:
+        #clear screen
+        os.system('cls' if os.name == 'nt' else 'clear')
+        dot_count += 1
+        print("Reading Weight", end=f"{dots[dot_count]}\n")
+        #print(f"Packages: {sensor.package_count} \nRecorded Weights: {sensor.recorded_weights}")
+        if dot_count == 4:
+            dot_count = 0
+        time.sleep(.5)
