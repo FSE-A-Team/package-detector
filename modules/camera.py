@@ -74,6 +74,7 @@ def run(model: str, max_results: int, score_threshold: float,
 
   # Continuously capture images from the camera and run inference
   while True:
+
     im= picam2.capture_array()  
 #    success, image = cap.read()
     image=cv2.resize(im,(640,480))
@@ -121,45 +122,7 @@ def cleanup(detector):
    #cap.release()
    cv2.destroyAllWindows()
 
-def main():
-  parser = argparse.ArgumentParser(
-      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser.add_argument(
-      '--model',
-      help='Path of the object detection model.',
-      required=False,
-      default='efficientdet_lite0.tflite')
-#      default='best.tflite')
-  parser.add_argument(
-      '--maxResults',
-      help='Max number of detection results.',
-      required=False,
-      default=5)
-  parser.add_argument(
-      '--scoreThreshold',
-      help='The score threshold of detection results.',
-      required=False,
-      type=float,
-      default=0.25)
-  # Finding the camera ID can be very reliant on platform-dependent methods. 
-  # One common approach is to use the fact that camera IDs are usually indexed sequentially by the OS, starting from 0. 
-  # Here, we use OpenCV and create a VideoCapture object for each potential ID with 'cap = cv2.VideoCapture(i)'.
-  # If 'cap' is None or not 'cap.isOpened()', it indicates the camera ID is not available.
-  parser.add_argument(
-      '--cameraId', help='Id of camera.', required=False, type=int, default=0)
-  parser.add_argument(
-      '--frameWidth',
-      help='Width of frame to capture from camera.',
-      required=False,
-      type=int,
-      default=640)
-  parser.add_argument(
-      '--frameHeight',
-      help='Height of frame to capture from camera.',
-      required=False,
-      type=int,
-      default=480)
-  args = parser.parse_args()
+def main(args):
 
   return run(args.model, int(args.maxResults),
       args.scoreThreshold, int(args.cameraId), args.frameWidth, args.frameHeight)

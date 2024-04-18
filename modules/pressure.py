@@ -1,6 +1,7 @@
 #Start by importing all necessary libraries and packages 
 import time
 from datetime import datetime
+#from modules import mock_smbus as smbus
 import smbus
 import asyncio
 import os
@@ -8,44 +9,43 @@ import os
 
 #create a sensor object
 class Sensor:
-    def __init__(self , input_address=[0x40, 0x41, 0x42, 0x43], I2c_address=0x48):
+    def __init__(self , sms, input_address=[0x40, 0x41, 0x42, 0x43], I2c_address=0x48):
         '''
         input_address: List of addresses for ADC inputs
         i2c_address: The address of the adc on the i2c bus
         '''
+        self.sms = sms
         self.I2c_address = I2c_address
         self.input_address = input_address
         self.bus = smbus.SMBus(1)
         self.package_count = 0
-        self.base_value = self.__get_current_total() * 1.05
+        self.base_value = 0
         self.recorded_weights = [self.base_value]
         self.current_state = 0 # 0: no change, 1: increase, -1: decrease
 
-        self.interval = 1
-        self.last_time_weight_changed = time.time()
+        self.sleep_interval = 1
 
     def __read_one_sensor(self, input_address=0x40):
         '''
         return just one sensor reading
         '''
-        #return datetime.now().second #for testing
         self.bus.write_byte(self.I2c_address, input_address)
         temp = self.bus.read_byte(self.I2c_address)
-        #print(input_address,"-",temp)
         return temp
     
-    def __read_all_sensors(self):
+    async def __read_all_sensors(self):
         '''
         iterate through input addresses and return average
         '''
         sum = 0
         #os.system('cls' if os.name == 'nt' else 'clear')
+        loop = asyncio.get_running_loop()
         for current_input_address in self.input_address:
-            if current_input_address == self.input_address[1]:
-              sum += self.__read_one_sensor(current_input_address)
+            if current_input_address == self.input_address[1]: #This is a workaround for only sensor 1 working
+              sum += await loop.run_in_executor(None, self.__read_one_sensor, current_input_address)
         return sum #/ len(self.input_address)
     
-    def __get_current_total(self, normalize_delay=6):
+    async def __get_current_total(self, normalize_delay=6):
         '''
         return the average reading over a period of time (normalize_delay)
         --------------------------------
@@ -55,11 +55,11 @@ class Sensor:
         sleep_time = 0.5
         normalize_delay = int(normalize_delay / sleep_time)
         for i in range(normalize_delay):
-            readings.append(self.__read_all_sensors())
-            time.sleep(sleep_time)
+            readings.append(await self.__read_all_sensors())
+            await asyncio.sleep(sleep_time)
         return int(sum(readings) / len(readings))
 
-    def __compare_to_last_recorded(self, current_value):
+    async def __compare_to_last_recorded(self, current_value):
         '''
         compare current value to last recorded value
         '''
@@ -75,13 +75,13 @@ class Sensor:
         '''
         return self.package_count, self.recorded_weights
     
-    def __record_weight(self, current_value):
+    async def __record_weight(self, current_value):
         new_package_weight = current_value - sum(self.recorded_weights)
         if new_package_weight > 0: #avoid package removal errors
             self.recorded_weights.append(new_package_weight)
             self.package_count += 1
 
-    def __remove_weight(self):
+    async def __remove_weight(self):
         '''
         -Quick and Easy handling-
         If a package is removed, assume all packages are removed
@@ -89,23 +89,36 @@ class Sensor:
         '''
         self.recorded_weights = [self.base_value]
         self.package_count = 0
-        current_value = self.__get_current_total()
+        current_value = await self.__get_current_total()
         if current_value > self.base_value:
             self.recorded_weights.append(current_value - self.base_value)
             self.package_count += 1
 
     
     async def run(self):
-
+        
+        self.base_value = await self.__get_current_total()
+        self.recorded_weights = [self.base_value]
+        
         while True:
-            current_total = self.__get_current_total()
-            self.current_state = self.__compare_to_last_recorded(current_total)
+            current_total = await self.__get_current_total()
+            self.current_state = await self.__compare_to_last_recorded(current_total)
+            print(f"current pressure reading: {current_total}")
+            print(f"current state: {self.current_state}")
             if self.current_state == 1:
-                self.__record_weight(current_total)
+                await self.__record_weight(current_total)
+                print("Found a package!")
+                await self.sms.send_sms_via_email(f'You have {self.package_count} package(s)!')
             elif self.current_state == -1:
-                self.__remove_weight()
+                await self.__remove_weight()
+                if self.package_count == 1:
+                    print("Package removed! Forgot a package?")
+                    await self.sms.send_sms_via_email('You forgot a package!')
+                else:
+                    print("All packages removed!")
+                    await self.sms.send_sms_via_email('All of your packages have been removed!')
 
-            await asyncio.sleep(self.interval)
+            await asyncio.sleep(self.sleep_interval)
 
 
 async def system_test():

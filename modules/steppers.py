@@ -42,7 +42,9 @@ sleep_time = .0015
 def initialize():
     gpio.setup({"in":[],"out":PINS})
 
-    
+def cleanup():
+    gpio.cleanup()
+
 # Function for stepping the motor
 def step_motor(steps=50, direction=1):
     global sleep_time

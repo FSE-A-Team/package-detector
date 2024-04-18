@@ -2,31 +2,37 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from modules import crypto
+import asyncio
 
+recipient = 'raspberrypi.apps@gmail.com'
+enabled = False
 
-
-def send_sms_via_email(sms_gateway, message):
+async def send_sms_via_email(message):
     """
     Sends an SMS message via an email gateway.
+    Credentials must be set first!
 
     Parameters:
-        sms_gateway (str): The recipient's SMS gateway (e.g., '1234567890@carrier.com').
         message (str): The message to send.
-        google_account (str): Your Google/Gmail account.
-        google_password (str): Your Google/Gmail password or App Password.
     """
-    global account, password
+    global account, password, recipient, enabled
+    print("Sending email...")
+    # Credentials must be set before sending an SMS
+    if not enabled:
+        print("Credentials not set - SMS not enabled.")
+        return
+    
     # Create the message
     email_msg = MIMEMultipart()
     email_msg['From'] = account
-    email_msg['To'] = sms_gateway
-    #email_msg['Subject'] = 'SMS via Email'  # You can change or remove the subject
+    email_msg['To'] = recipient
+    email_msg['Subject'] = 'You received a package!'  # You can change or comment out the subject
     email_msg['MIME-Version'] = '1.0'
     email_msg.add_header('Content-Type', 'text/plain; charset="UTF-8"')
     
     email_msg.attach(MIMEText(message, 'plain', 'utf-8'))
     headers = ["From: " + account,
-                "To: " + sms_gateway,
+                "To: " + recipient,
                 "MIME-Version: 1.0",
                 "Content-Type: text/html"]
     headers = "\r\n".join(headers)
@@ -39,10 +45,21 @@ def send_sms_via_email(sms_gateway, message):
 
     # Send the email
     #text = email_msg.as_string()
-    server.sendmail(account, sms_gateway, text)
+    server.sendmail(account, recipient, text)
     server.quit()
 
-    print("SMS sent successfully.")
+    print(f"email sent to {recipient}!")
+
+def set_recipient(recipient_address):
+    """
+    Sets the global recipient variable to the specified value.
+
+    Parameters:
+        recipient (str): The recipient's SMS gateway (e.g., '
+        """
+
+    global recipient
+    recipient = recipient_address
 
 def set_credentials(credentialDict):
     """
@@ -52,9 +69,14 @@ def set_credentials(credentialDict):
         account (str): Your Google/Gmail account.
         password (str): Your Google/Gmail password or App Password.
     """
-    global account, password
-    account = credentialDict['login']
-    password = crypto.decrypt_credentials(credentialDict)
+    global account, password, enabled
+    try:
+        account = credentialDict['login']
+        password = crypto.decrypt_credentials(credentialDict)
+        enabled = True
+        print(f"Credentials loaded for: {credentialDict['login']}")
+    except Exception as e:
+        print("Error setting credentials in sms.py: ", e)
 
 def get_credentials():
     """

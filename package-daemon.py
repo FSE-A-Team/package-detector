@@ -1,30 +1,83 @@
 #!/usr/bin/env python3
-from modules import crypto, gpio, pressure, sms, SQL, steppers, camera#, animation
 import argparse
+# Command line arguments
+parser = argparse.ArgumentParser(description='Package Daemon',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+parser.add_argument('--test', 
+                    action='store_true',
+                    help='Run in test mode')
+
+parser.add_argument('--email',
+                    metavar = 'email', 
+                    default = 'eelksemaj@gmail.com', 
+                    type = str,
+                    help='Email to send SMS alerts')
+
+# args for camera
+parser.add_argument('--model',
+                    help='Path of the object detection model.',
+                    required=False,
+                    default='efficientdet_lite0.tflite')
+                    #default='best.tflite')
+
+parser.add_argument('--maxResults',
+                    help='Max number of detection results.',
+                    required=False,
+                    default=1)
+
+parser.add_argument('--scoreThreshold',
+                    help='The score threshold of detection results.',
+                    required=False,
+                    type=float,
+                    default=0.25)
+# Finding the camera ID can be very reliant on platform-dependent methods. 
+# One common approach is to use the fact that camera IDs are usually indexed sequentially by the OS, starting from 0. 
+# Here, we use OpenCV and create a VideoCapture object for each potential ID with 'cap = cv2.VideoCapture(i)'.
+# If 'cap' is None or not 'cap.isOpened()', it indicates the camera ID is not available.
+parser.add_argument('--cameraId', 
+                    help='Id of camera.', 
+                    required=False, 
+                    type=int, 
+                    default=0)
+
+parser.add_argument('--frameWidth',
+                    help='Width of frame to capture from camera.',
+                    required=False,
+                    type=int,
+                    default=640)
+
+parser.add_argument('--frameHeight',
+                    help='Height of frame to capture from camera.',
+                    required=False,
+                    type=int,
+                    default=480)
+
+args = parser.parse_args()
+
+if args.test:
+    from modules import crypto
+    from modules import pressure
+    from modules import camera
+    from modules import gpio, steppers
+    from modules import SQL
+    from modules import sms
+else:
+    from modules import crypto, gpio, pressure, sms, SQL, steppers, camera#, animation
+
 import time
 import asyncio, threading
 import os
 
-# Command line arguments
-parser = argparse.ArgumentParser(description='Package Daemon')
 
-parser.add_argument('--example', 
-                    metavar = '50', default = 50.0, type = float,
-                    help='Time in milliseconds to wait for combo buttons')
-
-args = parser.parse_args()
 
 # Package Daemon
 class package_daemon:
     def __init__(self, args):
+        # Command line arguments
         self.args = args
-        # TODO: get pins from modules pins_dict = {"in": [3,5,7], "out": [12, 16, 18, 22]}
-        # TODO: initialize GPIO with pins_dict
 
-
-        # Pressure sensor
-        self.pSensor = pressure.Sensor()
-        
+        # Stepper motors
         steppers.initialize()
         
         #SQL database
@@ -35,22 +88,28 @@ class package_daemon:
         else:
             self.credentials[0]["pk"] = 'raspberry'
             sms.set_credentials(self.credentials[0])
-            print("Credentials loaded: ", self.credentials[0])
+            sms.set_recipient(self.args.email)
+            
+
+        # Pressure sensor
+        self.pSensor = pressure.Sensor(sms)
 
        
-
     def cleanup(self):
-        # TODO: cleanup GPIO
+        steppers.cleanup()
         self.pressure_task.cancel()
-        pass
 
     async def main(self):
+        # create asynchronous task for pressure sensor
         self.pressure_task = asyncio.create_task(self.pSensor.run())
+        last_package_count = 0
         while(True):
             try:
-                initial_package_count = 0
-                item_found = camera.main()
+
+                item_found = camera.main(self.args)
                 os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
+                print("I see a package!")
+                await asyncio.sleep(2)
 
                 if item_found:
                     print("looking for pressure change...")
@@ -58,21 +117,7 @@ class package_daemon:
                     steppers.open_lid()
                     await asyncio.sleep(3)
                     steppers.close_lid()
-
-                    package_count, package_list = await self.pSensor.get_package_count()
-                    while package_count < initial_package_count:
-                        package_count, package_list = await self.pSensor.get_package_count()
-                        await asyncio.sleep(1)  # Use asyncio.sleep instead of time.sleep
-                    print("found the package! ")
                     #animation.play()
-                   
-                    print("SENDING SMS...")
-                    sms.send_sms_via_email('eelksemaj@gmail.com', 'A package is in your box!!!')
-                    
-                    #sms.send_sms_via_email('6025618306@tmomail.net', 'You have a package!')
-                    #sms.send_sms_via_email('holgate.mark1@gmail.com', 'You have a package!')
-                print("packages: " + str(await self.pSensor.get_package_count()))
-                
                 await asyncio.sleep(1)  # Use asyncio.sleep instead of time.sleep
                     
             except KeyboardInterrupt:
