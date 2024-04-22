@@ -102,11 +102,12 @@ class Sensor:
         If weight > base_value, assume it is a single remaining package
         '''
         self.recorded_weights = [self.base_value]
-        self.package_count = 0
         current_value = await self.__get_current_total()
-        if current_value > self.base_value:
+        if (current_value > self.base_value) and (self.package_count > 1):
             self.recorded_weights.append(current_value - self.base_value)
-            self.package_count += 1
+            self.package_count = 1
+        else:
+            self.package_count = 0
 
     
     async def run(self):
