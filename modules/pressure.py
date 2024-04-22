@@ -1,7 +1,10 @@
 #Start by importing all necessary libraries and packages 
 import time
 from datetime import datetime
-#from modules import mock_smbus as smbus
+try:
+    from modules import mock_smbus
+except:
+    import mock_smbus
 import smbus
 import asyncio
 import os
@@ -9,7 +12,7 @@ import os
 
 #create a sensor object
 class Sensor:
-    def __init__(self , sms, input_address=[0x40, 0x41, 0x42, 0x43], I2c_address=0x48):
+    def __init__(self , sms, input_address=[0x40, 0x41, 0x42, 0x43], I2c_address=0x48, test=False):
         '''
         input_address: List of addresses for ADC inputs
         i2c_address: The address of the adc on the i2c bus
@@ -17,13 +20,17 @@ class Sensor:
         self.sms = sms
         self.I2c_address = I2c_address
         self.input_address = input_address
-        self.bus = smbus.SMBus(1)
+        if test:
+            self.bus = mock_smbus.SMBus(1)
+        else:
+            self.bus = smbus.SMBus(1)
         self.package_count = 0
         self.base_value = 0
         self.recorded_weights = [self.base_value]
         self.current_state = 0 # 0: no change, 1: increase, -1: decrease
 
         self.sleep_interval = 1
+        self.new_box_added = False
 
     def __read_one_sensor(self, input_address=0x40):
         '''
@@ -69,6 +76,13 @@ class Sensor:
             return -1
         return 0 #no change
 
+    async def set_added_new_box(self):
+        '''
+        used to tell the sensor that a new box has been added
+        a new box can only be recorded if this is set to True
+        '''
+        self.new_box_added = True
+
     async def get_package_count(self):
         '''
         used for external access to package count
@@ -98,25 +112,34 @@ class Sensor:
     async def run(self):
         
         self.base_value = await self.__get_current_total()
+        if self.base_value > 150: self.base_value = 75
         self.recorded_weights = [self.base_value]
         
         while True:
             current_total = await self.__get_current_total()
             self.current_state = await self.__compare_to_last_recorded(current_total)
-            print(f"current pressure reading: {current_total}")
-            print(f"current state: {self.current_state}")
-            if self.current_state == 1:
+
+            if self.new_box_added:
+                print(f"current total: {self.package_count} package(s)")
+                print(f"current weight: {current_total}")
+                print()
+            if self.current_state == 1 and self.new_box_added:
                 await self.__record_weight(current_total)
-                print("Found a package!")
+                self.new_box_added = False
+                print(f"New package weighs: {current_total}!")
+                print(f"Total packages: {self.package_count}")
                 await self.sms.send_sms_via_email(f'You have {self.package_count} package(s)!')
-            elif self.current_state == -1:
+                print()
+            elif self.current_state == -1 and self.package_count > 0:
                 await self.__remove_weight()
                 if self.package_count == 1:
-                    print("Package removed! Forgot a package?")
-                    await self.sms.send_sms_via_email('You forgot a package!')
+                    print("Package removed! But there is still at least one package remaining!")
+                    await self.sms.send_sms_via_email('You removed a package but there is still at least one package remaining!')
+                    print()
                 else:
                     print("All packages removed!")
                     await self.sms.send_sms_via_email('All of your packages have been removed!')
+                    print()
 
             await asyncio.sleep(self.sleep_interval)
 

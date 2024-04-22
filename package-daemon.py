@@ -24,7 +24,7 @@ parser.add_argument('--model',
 parser.add_argument('--maxResults',
                     help='Max number of detection results.',
                     required=False,
-                    default=1)
+                    default=3)
 
 parser.add_argument('--scoreThreshold',
                     help='The score threshold of detection results.',
@@ -92,7 +92,7 @@ class package_daemon:
             
 
         # Pressure sensor
-        self.pSensor = pressure.Sensor(sms)
+        self.pSensor = pressure.Sensor(sms, test=args.test)
 
        
     def cleanup(self):
@@ -102,22 +102,25 @@ class package_daemon:
     async def main(self):
         # create asynchronous task for pressure sensor
         self.pressure_task = asyncio.create_task(self.pSensor.run())
-        last_package_count = 0
+        os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
         while(True):
             try:
 
-                item_found = camera.main(self.args)
-                os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
-                print("I see a package!")
-                await asyncio.sleep(2)
-
+                item_found = await camera.main(self.args)
+                
+                
                 if item_found:
-                    print("looking for pressure change...")
-
+                    print("Dropping Package...")
+                    await self.pSensor.set_added_new_box()
+                    await asyncio.sleep(0.1)
+                    
                     steppers.open_lid()
                     await asyncio.sleep(3)
+                    print("Looking for pressure change...")
+                    print()
                     steppers.close_lid()
                     #animation.play()
+                    item_found = None
                 await asyncio.sleep(1)  # Use asyncio.sleep instead of time.sleep
                     
             except KeyboardInterrupt:

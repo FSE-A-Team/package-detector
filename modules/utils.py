@@ -58,3 +58,4 @@ def visualize(
   # print("Item Detected: " + category_name + "\nCategory Score: " + str(probability))
   
   return image
+
